@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 
 #include "seqFunctions.hpp"
 using namespace std;
@@ -43,6 +44,7 @@ void rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, in
             stab[i] = 1 - (cmin/cmax);
 
         vtab[i] = cmax;
+
     }
 }
 
@@ -50,7 +52,7 @@ unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int 
     int size = height*width;
     unsigned char* pixels;
     pixels = (unsigned char*) malloc(size*3*sizeof(unsigned char));
-    cout << sizeof(pixels) << endl;
+
     float c, x, m;
     float h, s, v;
     float r, g, b;
@@ -61,7 +63,7 @@ unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int 
         h = htab[i]; s = stab[i]; v = vtab[i];
         
         c = v*s;
-        x = c * (1 - abs(h/60.f - (int) ((h/60.f)/2) *2 -1));
+        x = c * (1 - fabs(h/60.f - (int) ((h/60.f)/2) *2 -1));
         m = v-c;
 
         if(h >= 0 && h < 60){
@@ -102,4 +104,19 @@ unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int 
     }
 
     return pixels;
+}
+
+int* histogramCPU(float* vtab, int size){
+    //int hist[256] = {0};
+    int* hist;
+    hist = (int*) calloc(256, sizeof(int));
+
+    int v;
+    for(int i=0; i<size ; i++){
+        v = (int)(vtab[i] * 100);  
+        //cout << v << endl;
+        hist[v] ++;
+    }
+
+    return hist;
 }

@@ -22,5 +22,7 @@ int main(int argc, char **argv){
     im._pixels = pix;
     im.save("output.png");
 
+    int* hist = histogramCPU(vtab, size);
+
     return 0;
 }
