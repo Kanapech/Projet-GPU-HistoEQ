@@ -9,6 +9,8 @@
 using namespace std;
 
 int main(int argc, char **argv){
+
+    cout << "======= Sequential on CPU ==========" << endl;
     float timeCPU;
     Image img;
     img.load("img/Chateau.png");
@@ -42,8 +44,6 @@ int main(int argc, char **argv){
     float *vtabGPU = new float[size];
         timeGPU = rgb2hsvCompute(pixels, htabGPU, stabGPU, vtabGPU, img._width, img._height);
     cout << "rgb2hsvCPU : " << timeGPU << "ms" << endl;
-
-
 
     return 0;
 }

@@ -3,13 +3,12 @@
 
 __global__
 void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height){
-    /*int x, y, offset, offsetHSV, size;
+    int x, y, offset, offsetHSV;
     x = blockIdx.x * blockDim.x + threadIdx.x;
     y = blockIdx.y * blockDim.y + threadIdx.y;
 
 	offset = (y*width+x)*3;
     offsetHSV = (y*width+x);
-    size = width*height;
 
     if(x < width && y < height){
 
@@ -38,7 +37,7 @@ void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab,
 
         vtab[offsetHSV] = cmax;
 
-    }*/
+    }
 }
 
 __host__
@@ -48,16 +47,16 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
 
     int size = width*height;
     // Allocate memory on Device
-		HANDLE_ERROR(cudaMalloc(&dev_pixels, size*3));
-		HANDLE_ERROR(cudaMalloc(&dev_htab, size));
-        HANDLE_ERROR(cudaMalloc(&dev_stab, size));
-        HANDLE_ERROR(cudaMalloc(&dev_vtab, size));
+		HANDLE_ERROR(cudaMalloc(&dev_pixels, size*3*sizeof(unsigned char)));
+		HANDLE_ERROR(cudaMalloc(&dev_htab, size*sizeof(float)));
+        HANDLE_ERROR(cudaMalloc(&dev_stab, size*sizeof(float)));
+        HANDLE_ERROR(cudaMalloc(&dev_vtab, size*sizeof(float)));
     
     // Copy from Host to Device
-		HANDLE_ERROR(cudaMemcpy(dev_pixels, pixels, size*3, cudaMemcpyHostToDevice));
-		HANDLE_ERROR(cudaMemcpy(dev_htab, htab, size, cudaMemcpyHostToDevice));
-        HANDLE_ERROR(cudaMemcpy(dev_stab, stab, size, cudaMemcpyHostToDevice));
-        HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size, cudaMemcpyHostToDevice));
+		HANDLE_ERROR(cudaMemcpy(dev_pixels, pixels, size*3*sizeof(unsigned char), cudaMemcpyHostToDevice));
+		HANDLE_ERROR(cudaMemcpy(dev_htab, htab, size*sizeof(float), cudaMemcpyHostToDevice));
+        HANDLE_ERROR(cudaMemcpy(dev_stab, stab, size*sizeof(float), cudaMemcpyHostToDevice));
+        HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
 
     //Kernel settings
         dim3 blockDim(32, 32);
@@ -72,10 +71,10 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
 	chr.stop();
 
 	// Copy from Device to Host
-		HANDLE_ERROR(cudaMemcpy(pixels, dev_pixels, size*3, cudaMemcpyDeviceToHost));
-		HANDLE_ERROR(cudaMemcpy(htab, dev_htab, size, cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(stab, dev_stab, size, cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size, cudaMemcpyDeviceToHost));
+		HANDLE_ERROR(cudaMemcpy(pixels, dev_pixels, size*3*sizeof(unsigned char), cudaMemcpyDeviceToHost));
+		HANDLE_ERROR(cudaMemcpy(htab, dev_htab, size*sizeof(float), cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy(stab, dev_stab, size*sizeof(float), cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
 
 	// Free memory on Device
 		HANDLE_ERROR(cudaFree(dev_pixels));
@@ -84,5 +83,4 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
         HANDLE_ERROR(cudaFree(dev_vtab));
 
 	return chr.elapsedTime();
-    return 1.f;
 }
