@@ -4,26 +4,22 @@
 #include <cmath>
 
 #include "seqFunctions.hpp"
+#include "utils/chronoCPU.hpp"
+
 using namespace std;
 
-void rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height){
+float rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height){
+    ChronoCPU chr;
+	chr.start();
     int size = height*width;
 
-    int *red, *green, *blue;
-
-    red = (int*) malloc(size*sizeof(int));
-    green = (int*) malloc(size*sizeof(int));
-    blue = (int*) malloc(size*sizeof(int));
     int j;
     for(int i = 0, j = 0; i<size; i++, j+=3){
-        red[i] = pixels[j];
-        green[i] = pixels[j+1];
-        blue[i] = pixels[j+2];
 
         float r, g, b;
-        r = red[i] / 255.;
-        g = green[i] / 255.;
-        b = blue[i] / 255.;
+        r = pixels[j] / 255.;
+        g = pixels[j+1] / 255.;
+        b = pixels[j+2] / 255.;
 
         float cmax = std::max(std::max(r, g), b);
         float cmin = std::min(std::min(r , g), b);
@@ -46,12 +42,15 @@ void rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, in
         vtab[i] = cmax;
 
     }
+    chr.stop();
+    return chr.elapsedTime();
 }
 
-unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int height){
+float hsv2rgbCPU(float* htab, float* stab, float* vtab, unsigned char* pixels, int width, int height){
+
+    ChronoCPU chr;
+	chr.start();
     int size = height*width;
-    unsigned char* pixels;
-    pixels = (unsigned char*) malloc(size*3*sizeof(unsigned char));
 
     float c, x, m;
     float h, s, v;
@@ -102,21 +101,22 @@ unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int 
         pixels[j+2] = (b+m)*255;
 
     }
+    chr.stop();
 
-    return pixels;
+    return chr.elapsedTime();
 }
 
-int* histogramCPU(float* vtab, int size){
-    //int hist[256] = {0};
-    int* hist;
-    hist = (int*) calloc(256, sizeof(int));
-
+float histogramCPU(float* vtab, int* hist,int size){
+    ChronoCPU chr;
+	chr.start();
     int v;
     for(int i=0; i<size ; i++){
-        v = (int)(vtab[i] * 100);  
+        v = 0;  
         //cout << v << endl;
-        hist[v] ++;
+        hist[(int)(vtab[i] * 100)] ++;
     }
 
-    return hist;
+    chr.stop();
+    
+    return chr.elapsedTime();
 }

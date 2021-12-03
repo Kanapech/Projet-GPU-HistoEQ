@@ -3,10 +3,10 @@
 
 #include "image.hpp"
 
-void rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height);
+float rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height);
 
-unsigned char* hsv2rgbCPU(float* htab, float* stab, float* vtab, int width, int height);
+float hsv2rgbCPU(float* htab, float* stab, float* vtab, unsigned char* pixels, int width, int height);
 
-int* histogramCPU(float* vtab, int size);
+float histogramCPU(float* vtab, int* hist, int size);
 
 #endif
