@@ -8,6 +8,12 @@
 
 using namespace std;
 
+bool compare_float(float x, float y, float epsilon = 0.01f){
+   if(fabs(x - y) < epsilon)
+      return true; //they are same
+      return false; //they are not same
+}
+
 int main(int argc, char **argv){
 
     cout << "======= Sequential on CPU ==========" << endl;
@@ -27,7 +33,7 @@ int main(int argc, char **argv){
 
     Image im(img._width, img._height, 3);
     im._pixels = pixels;
-    im.save("output.png");
+    im.save("outputCPU.png");
 
     int* hist = (int*) calloc(256, sizeof(int));
         timeCPU = histogramCPU(vtab, hist, size);
@@ -43,7 +49,25 @@ int main(int argc, char **argv){
     float *stabGPU = new float[size];
     float *vtabGPU = new float[size];
         timeGPU = rgb2hsvCompute(pixels, htabGPU, stabGPU, vtabGPU, img._width, img._height);
-    cout << "rgb2hsvCPU : " << timeGPU << "ms" << endl;
+    cout << "rgb2hsvGPU : " << timeGPU << "ms" << endl;
+
+    int i=0;
+    while(compare_float(htab[i], htabGPU[i]) && i < size)
+        i++;
+    cout << i << endl;
+    cout << htab[i] << " " << htabGPU[i] << endl;
+
+    unsigned char* pixelsGPU = (unsigned char*) malloc(size*3*sizeof(unsigned char));
+    timeGPU = hsv2rgbCompute(htabGPU, stabGPU, vtabGPU, pixelsGPU, img._width, img._height);
+    cout << "hsv2rgbGPU : " << timeGPU << "ms" << endl;
+    im._pixels = pixelsGPU;
+    im.save("outputGPU.png");
+
+    i=0;
+    while(pixels[i] == pixelsGPU[i] && i < size*3)
+        i++;
+    cout << i << endl;
+    cout << pixels[i] << " " << pixelsGPU[i] << endl;
 
     return 0;
 }
