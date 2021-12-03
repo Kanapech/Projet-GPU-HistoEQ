@@ -16,7 +16,7 @@ bool compare_float(float x, float y, float epsilon = 0.01f){
 
 int main(int argc, char **argv){
 
-    cout << "======= Sequential on CPU ==========" << endl;
+    cout << "======= Sequential on CPU ==========" << endl << endl;
     float timeCPU;
     Image img;
     img.load("img/Chateau.png");
@@ -36,13 +36,13 @@ int main(int argc, char **argv){
     im.save("outputCPU.png");
 
     int* hist = (int*) calloc(256, sizeof(int));
-        timeCPU = histogramCPU(vtab, hist, size);
+        timeCPU = histogramCPU(vtab, hist, img._width, img._height);
     cout << "histoCPU : " << timeCPU << "ms" << endl;
 
 
+    cout << endl;
 
-
-    cout << "======= Parallel on GPU ==========" << endl;
+    cout << "======= Parallel on GPU ==========" << endl << endl;
     float timeGPU;
     size = img._height*img._width;
     float *htabGPU = new float[size]; 
@@ -68,6 +68,16 @@ int main(int argc, char **argv){
         i++;
     cout << i << endl;
     cout << pixels[i] << " " << pixelsGPU[i] << endl;
+
+    int* histGPU = (int*) calloc(256, sizeof(int));
+        timeGPU = histogramCPU(vtabGPU, histGPU, img._width, img._height);
+    cout << "histoGPU : " << timeGPU << "ms" << endl;
+
+    i=0;
+    while(hist[i] == histGPU[i] && i < size*3)
+        i++;
+    cout << i << endl;
+    cout << hist[i] << " " << histGPU[i] << endl;
 
     return 0;
 }

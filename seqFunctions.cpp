@@ -106,15 +106,13 @@ float hsv2rgbCPU(float* htab, float* stab, float* vtab, unsigned char* pixels, i
     return chr.elapsedTime();
 }
 
-float histogramCPU(float* vtab, int* hist,int size){
+float histogramCPU(float* vtab, int* hist, int width, int height){
     ChronoCPU chr;
 	chr.start();
-    int v;
-    for(int i=0; i<size ; i++){
-        v = 0;  
-        //cout << v << endl;
+    int size = width*height;
+
+    for(int i=0; i<size ; i++)
         hist[(int)(vtab[i] * 100)] ++;
-    }
 
     chr.stop();
     

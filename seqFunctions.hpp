@@ -7,6 +7,6 @@ float rgb2hsvCPU(unsigned char* pixels, float* htab, float* stab, float* vtab, i
 
 float hsv2rgbCPU(float* htab, float* stab, float* vtab, unsigned char* pixels, int width, int height);
 
-float histogramCPU(float* vtab, int* hist, int size);
+float histogramCPU(float* vtab, int* hist, int width, int height);
 
 #endif
