@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 
 
     unsigned char* pixels = (unsigned char*) malloc(size*3*sizeof(unsigned char));
-        timeCPU =hsv2rgbCPU(htab, stab, vtab, pixels, img._width, img._height);
+        timeCPU = hsv2rgbCPU(htab, stab, vtab, pixels, img._width, img._height);
     cout << "hsv2rgbCPU : " << timeCPU << "ms" << endl;
 
     Image im(img._width, img._height, 3);
@@ -43,6 +43,14 @@ int main(int argc, char **argv){
         timeCPU = repartCPU(hist, repart);
     cout << "repartCPU : " << timeCPU << "ms" << endl;
 
+    float* eqVtab = (float*) calloc(size, sizeof(float));
+        timeCPU = equalizationCPU(repart, vtab, eqVtab, size);
+    cout << "equalizationCPU : " << timeCPU << "ms" << endl;
+
+    unsigned char* eqPixels = (unsigned char*) malloc(size*3*sizeof(unsigned char));
+    hsv2rgbCPU(htab, stab, eqVtab, eqPixels, img._width, img._height);
+    im._pixels = eqPixels;
+    im.save("outputEQ.png");
 
     cout << endl;
 
@@ -90,7 +98,7 @@ int main(int argc, char **argv){
     cout << i << endl;
     cout << hist[i] << " " << histGPU[i] << endl;
 
-    
+
 
     return 0;
 }
