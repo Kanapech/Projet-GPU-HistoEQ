@@ -108,6 +108,12 @@ int main(int argc, char **argv){
     cout << i << endl;
     cout << repart[i] << " " << repartGPU[i] << endl;
 
+    i=0;
+    while(i < 10){
+        cout << repartGPU[i] << endl;
+        i++;
+    }
+
     float* eqVtabGPU = (float*) calloc(size, sizeof(float));
         timeGPU = equalizationCompute(repartGPU, vtabGPU, eqVtabGPU, size);
     cout << "equalizationGPU : " << timeGPU << "ms" << endl;
@@ -119,7 +125,7 @@ int main(int argc, char **argv){
 
     /*i=0;
     while(i < size){
-        cout << eqVtabGPU[i] << endl;
+        cout << htab[i] << " " << htabGPU[i] << endl;
         i++;
     }*/
 

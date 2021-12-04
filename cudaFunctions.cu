@@ -32,10 +32,14 @@ void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab,
         else if(cmax == b)
             htab[offsetHSV] = (60 * ((r-g)/ diff) + 240) - ((int) ((60 * ((r-g)/ diff) + 240) / 360)) * 360;
 
+        /* plus long
         if(cmax == 0)
             stab[offsetHSV] = 0;
         else
             stab[offsetHSV] = 1 - (cmin/cmax);
+        */
+
+        stab[offsetHSV] = cmax == 0 ? 0 : 1 - (cmin/cmax);
 
         vtab[offsetHSV] = cmax;
 
@@ -237,12 +241,27 @@ __global__
 void repartKernel(int* hist, int* repart){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if(tid == 0){
+    __shared__ int test[256];
+    if(tid < 256)
+        test[threadIdx.x] = hist[threadIdx.x];
+    __syncthreads();
+
+    for (int offset = 1; offset < 256; offset *= 2){ 
+        if (threadIdx.x >= offset) {
+            test[threadIdx.x] += test[threadIdx.x - offset]; 	
+        }
+        __syncthreads(); 
+    }
+
+    if(tid < 256)
+        repart[tid] = test[threadIdx.x];
+
+    /*if(tid == 0){
         repart[tid] = hist[tid];
     }
     else if(tid < 256){;
         atomicAdd(&repart[tid], repart[tid-1]+hist[tid]); 
-    }
+    }*/
 }
 
 __host__
@@ -264,7 +283,7 @@ float repartCompute(int* hist, int* repart){
 	chr.start();
 
 	// Launch kernel
-		repartKernel<<<gridDim, blockDim>>>(dev_hist, dev_repart);
+		repartKernel<<<1, 256>>>(dev_hist, dev_repart);
 	
 	chr.stop();
 
