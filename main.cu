@@ -39,10 +39,15 @@ int main(int argc, char **argv){
         timeCPU = histogramCPU(vtab, hist, img._width, img._height);
     cout << "histoCPU : " << timeCPU << "ms" << endl;
 
+    int* repart = (int*) calloc(256, sizeof(int));
+        timeCPU = repartCPU(hist, repart);
+    cout << "repartCPU : " << timeCPU << "ms" << endl;
+
 
     cout << endl;
 
     cout << "======= Parallel on GPU ==========" << endl << endl;
+
     float timeGPU;
     size = img._height*img._width;
     float *htabGPU = new float[size]; 
@@ -70,14 +75,22 @@ int main(int argc, char **argv){
     cout << pixels[i] << " " << pixelsGPU[i] << endl;
 
     int* histGPU = (int*) calloc(256, sizeof(int));
-        timeGPU = histogramCPU(vtabGPU, histGPU, img._width, img._height);
+        timeGPU = histoCompute(vtabGPU, histGPU, img._width, img._height);
     cout << "histoGPU : " << timeGPU << "ms" << endl;
 
+    /*i=0;
+    while(i < 256){
+        cout << hist[i]<< " "<< histGPU[i] << endl;
+        i++;
+    }*/
+
     i=0;
-    while(hist[i] == histGPU[i] && i < size*3)
+    while(hist[i] == histGPU[i] && i < 256)
         i++;
     cout << i << endl;
     cout << hist[i] << " " << histGPU[i] << endl;
+
+    
 
     return 0;
 }

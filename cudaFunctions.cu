@@ -191,13 +191,12 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
 __global__
 void histoKernel(float* vtab, int* hist, int width, int height){
-    int xIndex, yIndex, size;
-    xIndex = blockIdx.x * blockDim.x + threadIdx.x;
-    yIndex = blockIdx.y * blockDim.y + threadIdx.y;
+ int tid, size;
+    tid = blockIdx.x * blockDim.x + threadIdx.x;
     size = width*height;
 
-    for(int i=0; i<size ; i++)
-        hist[(int)(vtab[i] * 100)] ++;
+    if(tid < size)
+        atomicAdd(hist+(int)(vtab[tid] * 100), 1);
 }
 
 __host__
@@ -215,14 +214,14 @@ float histoCompute(float* vtab, int* hist, int width, int height){
         HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
 
     //Kernel settings
-        dim3 blockDim(32, 32);
-        dim3 gridDim( blockDim.x, blockDim.y); 
+        int threads = 1024;
+        int blocks = (size + threads -1) / threads;
         
     ChronoGPU chr;
 	chr.start();
 
 	// Launch kernel
-		histoKernel<<<gridDim, blockDim>>>(dev_vtab, dev_hist, width, height);
+		histoKernel<<<blocks, threads>>>(dev_vtab, dev_hist, width, height);
 	
 	chr.stop();
 

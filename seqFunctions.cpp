@@ -118,3 +118,17 @@ float histogramCPU(float* vtab, int* hist, int width, int height){
     
     return chr.elapsedTime();
 }
+
+float repartCPU(int* hist, int* repart){
+    ChronoCPU chr;
+	chr.start();
+
+    int sum = 0;
+    for (int i=0; i<256; i++){
+        sum += hist[i]; 
+        repart[i] = (int) (sum);
+    }  
+    
+    chr.stop();
+    return chr.elapsedTime();
+}
