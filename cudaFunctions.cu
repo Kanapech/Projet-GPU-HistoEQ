@@ -281,7 +281,7 @@ float repartCompute(int* hist, int* repart){
 __global__
 void equalizationKernel(int* repart, float* vtab, float* eqVtab, int size){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(tid < 256)
+    if(tid < size)
         eqVtab[tid] = (float)(255.f/(256*size))*repart[(int)(vtab[tid] * 100)];
 }
 
@@ -301,20 +301,18 @@ float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size){
         HANDLE_ERROR(cudaMemcpy(dev_eqVtab, eqVtab, size*sizeof(float), cudaMemcpyHostToDevice));
 
     //Kernel settings
-        dim3 blockDim(32, 32);
-        dim3 gridDim( blockDim.x, blockDim.y); 
+        int threads = 1024;
+        int blocks = (size + threads -1) / threads; 
         
     ChronoGPU chr;
 	chr.start();
 
 	// Launch kernel
-		equalizationKernel<<<1, 256>>>(dev_repart, dev_vtab, dev_eqVtab, size);
+		equalizationKernel<<<blocks, threads>>>(dev_repart, dev_vtab, dev_eqVtab, size);
 	
 	chr.stop();
 
 	// Copy from Device to Host
-        HANDLE_ERROR(cudaMemcpy(repart, dev_repart, 256*sizeof(int), cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
         HANDLE_ERROR(cudaMemcpy(eqVtab, dev_eqVtab, size*sizeof(float), cudaMemcpyDeviceToHost));
 
 	// Free memory on Device

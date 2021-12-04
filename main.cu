@@ -117,11 +117,11 @@ int main(int argc, char **argv){
     im._pixels = eqPixelsGPU;
     im.save("outputEQGPU.png");
 
-    i=0;
-    while(i < 256){
-        cout << repartGPU[i] << endl;
+    /*i=0;
+    while(i < size){
+        cout << eqVtabGPU[i] << endl;
         i++;
-    }
+    }*/
 
     return 0;
 }
