@@ -1,6 +1,8 @@
 #include "cudaFunctions.hpp"
 #include "utils/chronoGPU.hpp"
 
+//----------------------- rgb2hsv ----------------------------//
+
 __global__
 void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height){
     int x, y, offset, offsetHSV;
@@ -54,9 +56,6 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
     
     // Copy from Host to Device
 		HANDLE_ERROR(cudaMemcpy(dev_pixels, pixels, size*3*sizeof(unsigned char), cudaMemcpyHostToDevice));
-		HANDLE_ERROR(cudaMemcpy(dev_htab, htab, size*sizeof(float), cudaMemcpyHostToDevice));
-        HANDLE_ERROR(cudaMemcpy(dev_stab, stab, size*sizeof(float), cudaMemcpyHostToDevice));
-        HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
 
     //Kernel settings
         dim3 blockDim(32, 32);
@@ -71,19 +70,19 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
 	chr.stop();
 
 	// Copy from Device to Host
-		HANDLE_ERROR(cudaMemcpy(pixels, dev_pixels, size*3*sizeof(unsigned char), cudaMemcpyDeviceToHost));
 		HANDLE_ERROR(cudaMemcpy(htab, dev_htab, size*sizeof(float), cudaMemcpyDeviceToHost));
         HANDLE_ERROR(cudaMemcpy(stab, dev_stab, size*sizeof(float), cudaMemcpyDeviceToHost));
         HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
 
 	// Free memory on Device
-		HANDLE_ERROR(cudaFree(dev_pixels));
 		HANDLE_ERROR(cudaFree(dev_htab));
         HANDLE_ERROR(cudaFree(dev_stab));
         HANDLE_ERROR(cudaFree(dev_vtab));
 
 	return chr.elapsedTime();
 }
+
+//----------------------- hsv2rgb ----------------------------//
 
 __global__
 void hsv2rgbKernel(float* htab, float* stab, float* vtab, unsigned char* pixels, int width, int height){
@@ -157,7 +156,6 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
         HANDLE_ERROR(cudaMalloc(&dev_vtab, size*sizeof(float)));
     
     // Copy from Host to Device
-		HANDLE_ERROR(cudaMemcpy(dev_pixels, pixels, size*3*sizeof(unsigned char), cudaMemcpyHostToDevice));
 		HANDLE_ERROR(cudaMemcpy(dev_htab, htab, size*sizeof(float), cudaMemcpyHostToDevice));
         HANDLE_ERROR(cudaMemcpy(dev_stab, stab, size*sizeof(float), cudaMemcpyHostToDevice));
         HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
@@ -176,9 +174,6 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
 	// Copy from Device to Host
         HANDLE_ERROR(cudaMemcpy(pixels, dev_pixels, size*3*sizeof(unsigned char), cudaMemcpyDeviceToHost));
-		HANDLE_ERROR(cudaMemcpy(htab, dev_htab, size*sizeof(float), cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(stab, dev_stab, size*sizeof(float), cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
 
 	// Free memory on Device
 		HANDLE_ERROR(cudaFree(dev_pixels));
@@ -188,6 +183,8 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
 	return chr.elapsedTime();
 }
+
+//----------------------- histo ----------------------------//
 
 __global__
 void histoKernel(float* vtab, int* hist, int width, int height){
@@ -210,7 +207,6 @@ float histoCompute(float* vtab, int* hist, int width, int height){
         HANDLE_ERROR(cudaMalloc(&dev_vtab, size*sizeof(float)));
     
     // Copy from Host to Device
-		HANDLE_ERROR(cudaMemcpy(dev_hist, hist, 256*sizeof(int), cudaMemcpyHostToDevice));
         HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
 
     //Kernel settings
@@ -227,11 +223,104 @@ float histoCompute(float* vtab, int* hist, int width, int height){
 
 	// Copy from Device to Host
         HANDLE_ERROR(cudaMemcpy(hist, dev_hist, 256*sizeof(int), cudaMemcpyDeviceToHost));
-        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
 
 	// Free memory on Device
         HANDLE_ERROR(cudaFree(dev_hist));
         HANDLE_ERROR(cudaFree(dev_vtab));
+
+	return chr.elapsedTime();
+}
+
+//----------------------- repart ----------------------------//
+
+__global__
+void repartKernel(int* hist, int* repart){
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(tid == 0){
+        repart[tid] = hist[tid];
+    }
+    else if(tid < 256){;
+        atomicAdd(&repart[tid], repart[tid-1]+hist[tid]); 
+    }
+}
+
+__host__
+float repartCompute(int* hist, int* repart){
+    int *dev_hist, *dev_repart;;
+
+    // Allocate memory on Device
+        HANDLE_ERROR(cudaMalloc(&dev_hist, 256*sizeof(int)));
+        HANDLE_ERROR(cudaMalloc(&dev_repart, 256*sizeof(int)));
+    
+    // Copy from Host to Device
+		HANDLE_ERROR(cudaMemcpy(dev_hist, hist, 256*sizeof(int), cudaMemcpyHostToDevice));
+
+    //Kernel settings
+        dim3 blockDim(32, 32);
+        dim3 gridDim( blockDim.x, blockDim.y); 
+        
+    ChronoGPU chr;
+	chr.start();
+
+	// Launch kernel
+		repartKernel<<<gridDim, blockDim>>>(dev_hist, dev_repart);
+	
+	chr.stop();
+
+	// Copy from Device to Host
+        HANDLE_ERROR(cudaMemcpy(repart, dev_repart, 256*sizeof(int), cudaMemcpyDeviceToHost));
+
+	// Free memory on Device
+        HANDLE_ERROR(cudaFree(dev_hist));
+        HANDLE_ERROR(cudaFree(dev_repart));
+
+	return chr.elapsedTime();
+}
+
+__global__
+void equalizationKernel(int* repart, float* vtab, float* eqVtab, int size){
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid < 256)
+        eqVtab[tid] = (float)(255.f/(256*size))*repart[(int)(vtab[tid] * 100)];
+}
+
+__host__
+float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size){
+    int* dev_repart;
+    float *dev_vtab, *dev_eqVtab;
+
+    // Allocate memory on Device
+        HANDLE_ERROR(cudaMalloc(&dev_repart, 256*sizeof(int)));
+        HANDLE_ERROR(cudaMalloc(&dev_vtab, size*sizeof(float)));
+        HANDLE_ERROR(cudaMalloc(&dev_eqVtab, size*sizeof(float)));
+    
+    // Copy from Host to Device
+        HANDLE_ERROR(cudaMemcpy(dev_repart, repart, 256*sizeof(int), cudaMemcpyHostToDevice));
+        HANDLE_ERROR(cudaMemcpy(dev_vtab, vtab, size*sizeof(float), cudaMemcpyHostToDevice));
+        HANDLE_ERROR(cudaMemcpy(dev_eqVtab, eqVtab, size*sizeof(float), cudaMemcpyHostToDevice));
+
+    //Kernel settings
+        dim3 blockDim(32, 32);
+        dim3 gridDim( blockDim.x, blockDim.y); 
+        
+    ChronoGPU chr;
+	chr.start();
+
+	// Launch kernel
+		equalizationKernel<<<1, 256>>>(dev_repart, dev_vtab, dev_eqVtab, size);
+	
+	chr.stop();
+
+	// Copy from Device to Host
+        HANDLE_ERROR(cudaMemcpy(repart, dev_repart, 256*sizeof(int), cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy(vtab, dev_vtab, size*sizeof(float), cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy(eqVtab, dev_eqVtab, size*sizeof(float), cudaMemcpyDeviceToHost));
+
+	// Free memory on Device
+        HANDLE_ERROR(cudaFree(dev_repart));
+        HANDLE_ERROR(cudaFree(dev_vtab));
+        HANDLE_ERROR(cudaFree(dev_eqVtab));
 
 	return chr.elapsedTime();
 }

@@ -126,7 +126,7 @@ float repartCPU(int* hist, int* repart){
     int sum = 0;
     for (int i=0; i<256; i++){
         sum += hist[i]; 
-        repart[i] = (int) (sum);
+        repart[i] = sum;
     }  
 
     chr.stop();

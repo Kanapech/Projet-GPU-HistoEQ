@@ -3,6 +3,8 @@
 
 #include "utils/common.hpp"
 
+// ---------------- Kernels ------------------------------------//
+
 __global__
 void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height);
 
@@ -12,6 +14,15 @@ void hsv2rgbKernel(float* htab, float* stab, float* vtab, unsigned char* pixels,
 __global__
 void histoKernel(float* vtab, int* hist, int width, int height);
 
+__global__
+void repartKernel(int* hist, int* repart);
+
+__global__
+void equalizationKernel(int* repart, float* vtab, float* eqVtab, int size);
+
+
+// ---------------- Call functions ------------------------------------//
+
 __host__
 float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vtab, int width, int height);
 
@@ -20,5 +31,11 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
 __host__
 float histoCompute(float* vtab, int* hist, int width, int height);
+
+__host__
+float repartCompute(int* hist, int* repart);
+
+__host__
+float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size);
 
 #endif
