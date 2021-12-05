@@ -40,7 +40,6 @@ void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab,
         */
 
         stab[offsetHSV] = cmax == 0 ? 0 : 1 - (cmin/cmax);
-
         vtab[offsetHSV] = cmax;
 
     }
@@ -63,7 +62,7 @@ float rgb2hsvCompute(unsigned char* pixels, float* htab, float* stab, float* vta
 
     //Kernel settings
         dim3 blockDim(32, 32);
-        dim3 gridDim( width / blockDim.x, height / blockDim.y); 
+        dim3 gridDim( (width-1)/blockDim.x+1, (height-1)/blockDim.y+1); 
         
     ChronoGPU chr;
 	chr.start();
@@ -166,7 +165,7 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
     //Kernel settings
         dim3 blockDim(32, 32);
-        dim3 gridDim( width / blockDim.x, height / blockDim.y); 
+        dim3 gridDim((width-1)/blockDim.x+1, (height-1)/blockDim.y+1); 
         
     ChronoGPU chr;
 	chr.start();
@@ -193,7 +192,7 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 __global__
 void histoKernel(float* vtab, int* hist, int width, int height){
     __shared__ int histo[256];
-    int pos = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    int pos = blockIdx.x * blockDim.x + threadIdx.x;
     int rang = threadIdx.x;
 
     if(rang < 256){
@@ -263,8 +262,8 @@ void repartKernel(int* hist, int* repart){
     __shared__ int sharedRepart[256];
 
     //Remplissage du tableau partagé avec les valeurs de l'histogramme
-    if(tid < 256)
-        sharedRepart[threadIdx.x] = hist[threadIdx.x];
+    //if(tid < 256) Pas besoin car 256 threads
+    sharedRepart[threadIdx.x] = hist[threadIdx.x];
     __syncthreads();
 
     //Calcul de la fonction de repartition
@@ -276,8 +275,8 @@ void repartKernel(int* hist, int* repart){
     }
 
     //Remplissage du tableau retourné
-    if(tid < 256)
-        repart[tid] = sharedRepart[threadIdx.x];
+    //if(tid < 256) Pas besoin car 256 threads
+    repart[tid] = sharedRepart[threadIdx.x];
 }
 
 __host__
@@ -340,7 +339,7 @@ float equalizationCompute(int* repart, float* vtab, float* eqVtab, int width, in
 
     //Kernel settings
         int threads = 1024;
-        int blocks = (size + threads-1) / 1024;
+        int blocks = (size + threads-1) / threads;
         
     ChronoGPU chr;
 	chr.start();
