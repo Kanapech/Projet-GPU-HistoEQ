@@ -18,7 +18,7 @@ __global__
 void repartKernel(int* hist, int* repart);
 
 __global__
-void equalizationKernel(int* repart, float* vtab, float* eqVtab, int size);
+void equalizationKernel(int* repart, float* vtab, float* eqVtab, int width, int height);
 
 
 // ---------------- Call functions ------------------------------------//
@@ -36,6 +36,6 @@ __host__
 float repartCompute(int* hist, int* repart);
 
 __host__
-float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size);
+float equalizationCompute(int* repart, float* vtab, float* eqVtab, int width, int height);
 
 #endif

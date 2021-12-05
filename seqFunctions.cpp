@@ -137,10 +137,10 @@ float repartCPU(int* hist, int* repart){
     return chr.elapsedTime();
 }
 
-float equalizationCPU(int* repart, float* vtab, float* eqVtab, int size){
+float equalizationCPU(int* repart, float* vtab, float* eqVtab, int width, int height){
     ChronoCPU chr;
 	chr.start();
-
+    int size = width*height;
     for(int i=0; i<size; i++){
         eqVtab[i] = (float)(255.f/(256*size))*repart[(int)(vtab[i] * 100)];
         //cout << eqVtab[i] << endl;

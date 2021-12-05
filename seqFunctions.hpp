@@ -11,6 +11,6 @@ float histogramCPU(float* vtab, int* hist, int width, int height);
 
 float repartCPU(int* hist, int* repart);
 
-float equalizationCPU(int* repart, float* vtab, float* eqVtab, int size);
+float equalizationCPU(int* repart, float* vtab, float* eqVtab, int width, int height);
 
 #endif

@@ -192,12 +192,32 @@ float hsv2rgbCompute(float* htab, float* stab, float* vtab, unsigned char* pixel
 
 __global__
 void histoKernel(float* vtab, int* hist, int width, int height){
- int tid, size;
+    __shared__ int histo[256];
+    int pos = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    int rang = threadIdx.x;
+
+    if(rang < 256){
+        histo[rang] = 0;
+    }
+    __syncthreads();
+
+    if(pos<width*height){
+        atomicAdd(histo+(int)(vtab[pos] * 100), 1);
+    }
+    __syncthreads();
+
+    if(rang < 256){
+        atomicAdd(hist+rang, histo[rang]);
+    }
+
+    /* version plus lente (plus de 5x) 
+    int tid, size;
     tid = blockIdx.x * blockDim.x + threadIdx.x;
     size = width*height;
 
     if(tid < size)
         atomicAdd(hist+(int)(vtab[tid] * 100), 1);
+    */
 }
 
 __host__
@@ -215,8 +235,8 @@ float histoCompute(float* vtab, int* hist, int width, int height){
 
     //Kernel settings
         int threads = 1024;
-        int blocks = (size + threads -1) / threads;
-        
+        int blocks = (size + threads-1) / threads;
+
     ChronoGPU chr;
 	chr.start();
 
@@ -240,28 +260,24 @@ float histoCompute(float* vtab, int* hist, int width, int height){
 __global__
 void repartKernel(int* hist, int* repart){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    __shared__ int sharedRepart[256];
 
-    __shared__ int test[256];
+    //Remplissage du tableau partagé avec les valeurs de l'histogramme
     if(tid < 256)
-        test[threadIdx.x] = hist[threadIdx.x];
+        sharedRepart[threadIdx.x] = hist[threadIdx.x];
     __syncthreads();
 
+    //Calcul de la fonction de repartition
     for (int offset = 1; offset < 256; offset *= 2){ 
         if (threadIdx.x >= offset) {
-            test[threadIdx.x] += test[threadIdx.x - offset]; 	
+            sharedRepart[threadIdx.x] += sharedRepart[threadIdx.x - offset]; 	
         }
         __syncthreads(); 
     }
 
+    //Remplissage du tableau retourné
     if(tid < 256)
-        repart[tid] = test[threadIdx.x];
-
-    /*if(tid == 0){
-        repart[tid] = hist[tid];
-    }
-    else if(tid < 256){;
-        atomicAdd(&repart[tid], repart[tid-1]+hist[tid]); 
-    }*/
+        repart[tid] = sharedRepart[threadIdx.x];
 }
 
 __host__
@@ -276,14 +292,14 @@ float repartCompute(int* hist, int* repart){
 		HANDLE_ERROR(cudaMemcpy(dev_hist, hist, 256*sizeof(int), cudaMemcpyHostToDevice));
 
     //Kernel settings
-        dim3 blockDim(32, 32);
-        dim3 gridDim( blockDim.x, blockDim.y); 
+        int nbThreads = 256;
+        int nbBlocks = 1;
         
     ChronoGPU chr;
 	chr.start();
 
 	// Launch kernel
-		repartKernel<<<1, 256>>>(dev_hist, dev_repart);
+		repartKernel<<<nbBlocks, nbThreads>>>(dev_hist, dev_repart);
 	
 	chr.stop();
 
@@ -298,16 +314,19 @@ float repartCompute(int* hist, int* repart){
 }
 
 __global__
-void equalizationKernel(int* repart, float* vtab, float* eqVtab, int size){
+void equalizationKernel(int* repart, float* vtab, float* eqVtab, int width, int height){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int size = width*height;
+
     if(tid < size)
         eqVtab[tid] = (float)(255.f/(256*size))*repart[(int)(vtab[tid] * 100)];
 }
 
 __host__
-float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size){
+float equalizationCompute(int* repart, float* vtab, float* eqVtab, int width, int height){
     int* dev_repart;
     float *dev_vtab, *dev_eqVtab;
+    int size = width*height;
 
     // Allocate memory on Device
         HANDLE_ERROR(cudaMalloc(&dev_repart, 256*sizeof(int)));
@@ -321,13 +340,13 @@ float equalizationCompute(int* repart, float* vtab, float* eqVtab, int size){
 
     //Kernel settings
         int threads = 1024;
-        int blocks = (size + threads -1) / threads; 
+        int blocks = (size + threads-1) / 1024;
         
     ChronoGPU chr;
 	chr.start();
 
 	// Launch kernel
-		equalizationKernel<<<blocks, threads>>>(dev_repart, dev_vtab, dev_eqVtab, size);
+		equalizationKernel<<<blocks, threads>>>(dev_repart, dev_vtab, dev_eqVtab, width, height);
 	
 	chr.stop();
 

@@ -44,7 +44,7 @@ int main(int argc, char **argv){
     cout << "repartCPU : " << timeCPU << "ms" << endl;
 
     float* eqVtab = (float*) calloc(size, sizeof(float));
-        timeCPU = equalizationCPU(repart, vtab, eqVtab, size);
+        timeCPU = equalizationCPU(repart, vtab, eqVtab, img._width, img._height);
     cout << "equalizationCPU : " << timeCPU << "ms" << endl;
 
     unsigned char* eqPixels = (unsigned char*) malloc(size*3*sizeof(unsigned char));
@@ -72,7 +72,7 @@ int main(int argc, char **argv){
 
     unsigned char* pixelsGPU = (unsigned char*) malloc(size*3*sizeof(unsigned char));
     timeGPU = hsv2rgbCompute(htabGPU, stabGPU, vtabGPU, pixelsGPU, img._width, img._height);
-    cout << "hsv2rgbGPU : " << timeGPU << "ms" << endl;
+        cout << "hsv2rgbGPU : " << timeGPU << "ms" << endl;
     im._pixels = pixelsGPU;
     im.save("outputGPU.png");
 
@@ -108,14 +108,8 @@ int main(int argc, char **argv){
     cout << i << endl;
     cout << repart[i] << " " << repartGPU[i] << endl;
 
-    i=0;
-    while(i < 10){
-        cout << repartGPU[i] << endl;
-        i++;
-    }
-
     float* eqVtabGPU = (float*) calloc(size, sizeof(float));
-        timeGPU = equalizationCompute(repartGPU, vtabGPU, eqVtabGPU, size);
+        timeGPU = equalizationCompute(repartGPU, vtabGPU, eqVtabGPU, img._width, img._height);
     cout << "equalizationGPU : " << timeGPU << "ms" << endl;
 
     unsigned char* eqPixelsGPU = (unsigned char*) malloc(size*3*sizeof(unsigned char));
@@ -123,11 +117,11 @@ int main(int argc, char **argv){
     im._pixels = eqPixelsGPU;
     im.save("outputEQGPU.png");
 
-    /*i=0;
-    while(i < size){
-        cout << htab[i] << " " << htabGPU[i] << endl;
+    i=0;
+    while(i < 256){
+        cout << histGPU[i] << " " << repartGPU[i] << endl;
         i++;
-    }*/
+    }
 
     return 0;
 }
