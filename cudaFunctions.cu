@@ -32,13 +32,6 @@ void rgb2hsvKernel(unsigned char* pixels, float* htab, float* stab, float* vtab,
         else if(cmax == b)
             htab[offsetHSV] = (60 * ((r-g)/ diff) + 240) - ((int) ((60 * ((r-g)/ diff) + 240) / 360)) * 360;
 
-        /* plus long
-        if(cmax == 0)
-            stab[offsetHSV] = 0;
-        else
-            stab[offsetHSV] = 1 - (cmin/cmax);
-        */
-
         stab[offsetHSV] = cmax == 0 ? 0 : 1 - (cmin/cmax);
         vtab[offsetHSV] = cmax;
 
